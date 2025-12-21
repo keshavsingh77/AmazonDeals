@@ -1,11 +1,11 @@
 const AFFILIATE_TAG = "dukankasaman-21"; // Apna Tag Yahan Daalo
 
 const products = [
-    "https://amzn.to/48NI9pI",
-    "https://www.amazon.in/dp/B0DTTZ86TV",
-    "https://amzn.to/491Lwbp",
-    "https://amzn.to/48OzQKr",
-    "https://amzn.to/4arvYAe",
+    "https://amzn.to/48MFm00",
+    "https://amzn.to/4p5L3uU",
+    "https://amzn.to/3MLuwyN",
+    "https://amzn.to/3Y6TAmd",
+    "https://amzn.to/3L2JZK8",
     "https://amzn.to/4qq0Tlf",
     "https://amzn.to/4pXMDQH",
     "https://amzn.to/3KVZjs8",
