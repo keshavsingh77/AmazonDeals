@@ -14,15 +14,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def clean_price(price_str):
-    if not price_str: return 0
-    # Remove non-numeric characters except dot
-    clean = re.sub(r'[^\d.]', '', str(price_str))
-    try:
-        return float(clean)
-    except:
-        return 0
-
 @app.get("/api/check")
 def check_price(url: str, tag: str):
     headers = {
@@ -31,101 +22,66 @@ def check_price(url: str, tag: str):
     }
     
     try:
-        # 1. Open URL (Handle Short Links)
-        session = requests.Session()
-        response = session.get(url, headers=headers, timeout=10, allow_redirects=True)
+        # 1. REQUEST BHEJO (Allow Redirects = True)
+        # Ye short link (amzn.to) ko open karke full link bana dega
+        response = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
         
         if response.status_code != 200: 
-            return {"error": "Link Blocked or Invalid"}
+            return {"error": "Link Blocked"}
 
+        # Ye hai asli lamba URL
         final_url = response.url
 
-        # 2. Extract ASIN
+        # 2. AB ASIN NIKALO (Final URL se)
+        # Hum multiple patterns check karenge taaki galti na ho
         match = re.search(r'/dp/([A-Z0-9]{10})', final_url)
-        if not match: match = re.search(r'/gp/product/([A-Z0-9]{10})', final_url)
-        if not match: match = re.search(r'/([A-Z0-9]{10})', final_url)
+        if not match:
+            match = re.search(r'/gp/product/([A-Z0-9]{10})', final_url)
+        if not match:
+            match = re.search(r'/([A-Z0-9]{10})', final_url) # Fallback
 
-        if not match: return {"error": "Product ID Not Found"}
+        if not match:
+            return {"error": "Product ID Not Found"}
+            
         asin = match.group(1)
         
-        # Affiliate Link
+        # Affiliate Link Banao
         affiliate_link = f"https://www.amazon.in/dp/{asin}?tag={tag}"
 
-        # 3. Parse HTML
+        # 3. DATA NIKALO HTML SE
         soup = BeautifulSoup(response.content, "lxml")
 
-        # --- Title ---
-        title_elem = soup.find("span", attrs={"id": "productTitle"})
-        title = title_elem.get_text().strip()[:65] + "..." if title_elem else "Amazon Deal"
+        # Title
+        title = soup.find("span", attrs={"id": "productTitle"})
+        title = title.get_text().strip()[:60] + "..." if title else "Amazon Deal"
 
-        # --- Image ---
+        # Price
+        price = "See Price"
+        price_tag = soup.find("span", attrs={"class": "a-price-whole"})
+        if not price_tag:
+            price_tag = soup.find("span", attrs={"class": "a-offscreen"})
+            
+        if price_tag:
+            price_text = price_tag.get_text().strip().replace('.', '')
+            # Agar symbol nahi hai to lagao
+            if "₹" not in price_text:
+                price = "₹" + price_text
+            else:
+                price = price_text
+
+        # Image
         image = "https://placehold.co/200?text=No+Image"
         img_div = soup.find("div", attrs={"id": "imgTagWrapperId"})
-        if img_div and img_div.find("img"): 
+        if img_div and img_div.find("img"):
             image = img_div.find("img")["src"]
         else:
             landing_img = soup.find("img", attrs={"id": "landingImage"})
-            if landing_img: image = landing_img["src"]
-
-        # --- Price Logic ---
-        price_tag = soup.find("span", attrs={"class": "a-price-whole"})
-        if not price_tag: price_tag = soup.find("span", attrs={"class": "a-offscreen"})
-        
-        selling_price_str = "Check"
-        selling_price_val = 0
-        
-        if price_tag:
-            raw_price = price_tag.get_text().strip().replace('.', '')
-            selling_price_str = "₹" + raw_price if "₹" not in raw_price else raw_price
-            selling_price_val = clean_price(selling_price_str)
-
-        # --- MRP & Discount Logic ---
-        mrp_str = ""
-        discount_str = ""
-        
-        mrp_tag = soup.find("span", attrs={"class": "a-text-price"})
-        if mrp_tag:
-            mrp_inner = mrp_tag.find("span", attrs={"class": "a-offscreen"})
-            if mrp_inner:
-                mrp_str = mrp_inner.get_text().strip()
-                mrp_val = clean_price(mrp_str)
-                
-                # Calculate % Off
-                if mrp_val > selling_price_val and mrp_val > 0:
-                    off = int(((mrp_val - selling_price_val) / mrp_val) * 100)
-                    if off > 0:
-                        discount_str = f"-{off}%"
-
-        # --- COUPON CHECK (Important) ---
-        coupon_text = ""
-        # Amazon pe coupon ka text alag-alag jagah hota hai
-        coupon_elem = soup.find("label", string=re.compile(r"Apply .* coupon"))
-        if not coupon_elem:
-            coupon_elem = soup.find("span", class_="promoPriceBlockMessage")
-        
-        if coupon_elem:
-            full_text = coupon_elem.get_text().strip()
-            # Extract Amount (e.g. ₹50 or 5%)
-            amount_match = re.search(r'(₹\d+|SAVE \d+|\d+%)', full_text)
-            if amount_match:
-                coupon_text = f"Apply {amount_match.group(0)} Coupon"
-            else:
-                coupon_text = "Coupon Available"
-
-        # --- BANK OFFER CHECK ---
-        bank_offer = False
-        # Page text me 'Bank Offer' dhoondo
-        page_text = soup.get_text()
-        if "Bank Offer" in page_text or "Partner Offers" in page_text:
-            bank_offer = True
+            if landing_img:
+                image = landing_img["src"]
 
         return {
             "title": title,
-            "price": selling_price_str,
-            "mrp": mrp_str,
-            "discount": discount_str,
-            "coupon": coupon_text,    # Frontend uses this
-            "bank_offer": bank_offer, # Frontend uses this
+            "price": price,
             "image": image,
             "link": affiliate_link
         }
