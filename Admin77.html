@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon Deals - Advanced Admin Panel</title>
+    <!-- Google Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #ff9900;
+            --secondary-color: #232f3e;
+            --success-color: #28a745;
+            --bg-color: #f0f2f5;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .admin-container {
+            background: white;
+            width: 100%;
+            max-width: 600px;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            margin: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header i {
+            font-size: 50px;
+            color: var(--primary-color);
+        }
+
+        .header h2 {
+            margin: 10px 0;
+            color: var(--secondary-color);
+            letter-spacing: 1px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+            box-sizing: border-box;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 8px rgba(255, 153, 0, 0.2);
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-update {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-update:hover { background-color: #e68a00; }
+
+        .btn-fetch {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        #status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+            font-weight: 500;
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="admin-container">
+    <div class="header">
+        <i class="fab fa-amazon"></i>
+        <h2>Deals Admin Panel</h2>
+        <p style="color: #888; font-size: 13px;">Realtime Firebase Database Mode</p>
+    </div>
+
+    <!-- Affiliate Tag -->
+    <div class="input-group">
+        <label><i class="fas fa-tag"></i> Affiliate Tag:</label>
+        <input type="text" id="affiliateTag" placeholder="example-21" value="dukankasaman-21">
+    </div>
+
+    <!-- Products Links -->
+    <div class="input-group">
+        <label><i class="fas fa-link"></i> Product Links (Ek line mein ek):</label>
+        <textarea id="productLinks" rows="12" placeholder="https://amzn.to/xxxx&#10;https://amzn.to/yyyy"></textarea>
+    </div>
+
+    <div class="btn-container">
+        <button class="btn-fetch" onclick="fetchData()">
+            <i class="fas fa-sync"></i> Get Data
+        </button>
+        <button class="btn-update" onclick="updateData()">
+            <div class="loader" id="btnLoader"></div>
+            <span id="btnText"><i class="fas fa-cloud-upload-alt"></i> Update Database</span>
+        </button>
+    </div>
+
+    <div id="status"></div>
+</div>
+
+<!-- Firebase SDKs -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // Aapka Firebase Configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyCYqOxWY3ZVGTM6CELrwqQ3BXz79fRqHEQ",
+        authDomain: "blog-post-51fbc.firebaseapp.com",
+        databaseURL: "https://blog-post-51fbc-default-rtdb.firebaseio.com",
+        projectId: "blog-post-51fbc",
+        storageBucket: "blog-post-51fbc.firebasestorage.app",
+        messagingSenderId: "195270065421",
+        appId: "1:195270065421:web:347f9cb903f62719b6c444",
+        measurementId: "G-WSE0SG69P5"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Update Function
+    window.updateData = async function() {
+        const tag = document.getElementById('affiliateTag').value.trim();
+        const linksText = document.getElementById('productLinks').value.trim();
+        const status = document.getElementById('status');
+        const loader = document.getElementById('btnLoader');
+        const btnText = document.getElementById('btnText');
+
+        if (!tag || !linksText) {
+            showStatus("Tag aur Links dono bhariye!", "#f8d7da", "#721c24");
+            return;
+        }
+
+        const linksArray = linksText.split('\n').map(l => l.trim()).filter(l => l !== "");
+
+        // Show loading
+        loader.style.display = "block";
+        btnText.style.display = "none";
+
+        try {
+            await set(ref(db, 'amazonDeals/'), {
+                affiliate_tag: tag,
+                products: linksArray,
+                last_updated: new Date().toLocaleString()
+            });
+            showStatus("✅ Firebase Database updated successfully!", "#d4edda", "#155724");
+        } catch (error) {
+            showStatus("❌ Error: " + error.message, "#f8d7da", "#721c24");
+        } finally {
+            loader.style.display = "none";
+            btnText.style.display = "flex";
+        }
+    }
+
+    // Fetch Current Data
+    window.fetchData = async function() {
+        const dbRef = ref(db);
+        try {
+            const snapshot = await get(child(dbRef, 'amazonDeals/'));
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                document.getElementById('affiliateTag').value = data.affiliate_tag;
+                document.getElementById('productLinks').value = data.products.join('\n');
+                showStatus("Current data fetched!", "#cce5ff", "#004085");
+            } else {
+                showStatus("No data found in Database.", "#fff3cd", "#856404");
+            }
+        } catch (error) {
+            showStatus("Fetch Error: " + error.message, "#f8d7da", "#721c24");
+        }
+    }
+
+    function showStatus(msg, bg, color) {
+        const status = document.getElementById('status');
+        status.innerText = msg;
+        status.style.backgroundColor = bg;
+        status.style.color = color;
+        status.style.display = "block";
+        setTimeout(() => { status.style.display = "none"; }, 4000);
+    }
+</script>
+
+</body>
+          </html>
