@@ -1,10 +1,16 @@
-const AFFILIATE_TAG = "dukankasaman-21"; // Apna Tag Yahan Daalo
+// Website par data dikhane ke liye snippet
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-const products = [
-    "https://www.amazon.in/dp/B08BYBP536?th=1&tag=dukankasaman-21",
-    "https://www.amazon.in/dp/B0FKTGWWSH?psc=1&th=1&tag=dukankasaman-21",
-    "https://www.amazon.in/live/broadcast/d8e71bf6-6361-4823-89d9-7d90789379ee?tag=dukankasaman-21",
-    "https://www.amazon.in/dp/B00VJYYJ80?tag=dukankasaman-21",
-    "https://www.amazon.in/dp/B0DJJZ9TC8?psc=1&th=1&tag=dukankasaman-21",
-    // Aur links yahan comma (,) laga ke add karte jao
-];
+const db = getDatabase();
+const dealsRef = ref(db, 'amazonDeals/');
+
+onValue(dealsRef, (snapshot) => {
+    const data = snapshot.val();
+    const AFFILIATE_TAG = data.affiliate_tag;
+    const products = data.products;
+    
+    console.log("Tag:", AFFILIATE_TAG);
+    console.log("Links:", products);
+    
+    // Yahan apna logic likhein links display karne ka
+});
