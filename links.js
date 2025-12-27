@@ -1,17 +1,9 @@
-const AFFILIATE_TAG = "dukankasaman-21"; // Apna Tag Yahan Daalo
-
-const products = [
-    "https://amzn.to/48MFm00",
-    "https://amzn.to/4p5L3uU",
-    "https://amzn.to/3MLuwyN",
-    "https://amzn.to/3Y6TAmd",
-    "https://amzn.to/3L2JZK8",
-    "https://amzn.to/4qq0Tlf",
-    "https://amzn.to/4pXMDQH",
-    "https://amzn.to/3KVZjs8",
-    "https://amzn.to/3YBlKWy",
-    "https://amzn.to/44BTPcC",
-    "https://amzn.to/4pKbPKh",
-    "https://amzn.to/4qFkRbR",
-    // Aur links yahan comma (,) laga ke add karte jao
-];
+const amazonData = {
+  "affiliate_tag": "dukankasaman-21",
+  "total": 2,
+  "updated": "27/12/2025, 10:17:21 am",
+  "products": [
+    "https://www.amazon.in/dp/B08BYBP536?th=1&tag=dukankasaman-21",
+    "https://www.amazon.in/dp/B0FKTGWWSH?psc=1&th=1&tag=dukankasaman-21"
+  ]
+};
